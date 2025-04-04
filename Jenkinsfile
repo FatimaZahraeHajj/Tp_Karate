@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         TOKEN_FILE = 'xray_token.txt'
+        XRAY_ISSUE_KEY = 'POEI20252-625'
     }
 
     stages {
@@ -18,7 +19,28 @@ pipeline {
                         -d "{\\\"client_id\\\": \\\"%XRAY_ID%\\\", \\\"client_secret\\\": \\\"%XRAY_SECRET%\\\"}" ^
                         -o %TOKEN_FILE%
                     """
-                    bat "type %TOKEN_FILE%" // (facultatif, à enlever si tu veux masquer le token
+                }
+            }
+        }
+
+        stage('Download Feature Files from Xray') {
+            steps {
+                script {
+                    def token = readFile("${env.TOKEN_FILE}").trim().replaceAll('"', '')
+                    echo "Token chargé pour export : OK"
+
+                    bat """
+                        curl -X GET "https://xray.cloud.getxray.app/api/v2/export/cucumber?keys=${env.XRAY_ISSUE_KEY}" ^
+                        -H "Authorization: Bearer ${token}" ^
+                        -H "Accept: application/zip" ^
+                        --output features.zip
+                    """
+
+                    // Décompression dans src/test/resources/features
+                    bat 'powershell -Command "Expand-Archive -Path features.zip -DestinationPath src/test/resources/features -Force"'
+
+                    // Affichage pour vérification
+                    bat 'dir src\\test\\resources\\features'
                 }
             }
         }
