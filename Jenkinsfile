@@ -36,13 +36,22 @@ pipeline {
                         --output features.zip
                     """
 
-                    // Décompression dans src/test/resources/features
                     bat 'powershell -Command "Expand-Archive -Path features.zip -DestinationPath src/test/resources/features -Force"'
-
-                    // Affichage pour vérification
                     bat 'dir src\\test\\resources\\features'
                 }
             }
+        }
+
+        stage('Run Karate Tests') {
+            steps {
+                bat 'mvn test'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit 'target/surefire-reports/*.xml'
         }
     }
 }
